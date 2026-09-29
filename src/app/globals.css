@@ -1,0 +1,124 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/*
+ * Auryx design tokens.
+ * Brand colours are retained from the existing Auryx site:
+ *   primary navy  #1B5998   ·   bulb gold  #EEAD2B
+ */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-navy-50: #eef4fb;
+  --color-navy-100: #d9e6f5;
+  --color-navy-200: #b4cdea;
+  --color-navy-300: #84acd9;
+  --color-navy-400: #4f84c1;
+  --color-navy-500: #2a68a9;
+  --color-navy-600: #1b5998; /* brand primary */
+  --color-navy-700: #174a7e;
+  --color-navy-800: #133b64;
+  --color-navy-900: #0e2c4b;
+  --color-navy-950: #081b30; /* deep sea */
+
+  --color-gold-300: #f6d28a;
+  --color-gold-400: #f2c05a;
+  --color-gold-500: #eead2b; /* brand accent (bulb) */
+  --color-gold-600: #c98c14;
+
+  --color-ink: #0f1b2d;
+  --color-muted: #52627a;
+  --color-line: #dfe6ef;
+  --color-surface: #f6f8fb;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-white text-ink antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight text-balance;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-gold-500;
+  }
+  ::selection {
+    @apply bg-gold-300 text-ink;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+}
+@utility eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.18em] text-navy-600;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-gold-500 text-navy-950 hover:bg-gold-400;
+}
+@utility btn-navy {
+  @apply btn bg-navy-600 text-white hover:bg-navy-700;
+}
+@utility btn-outline {
+  @apply btn border border-navy-200 bg-white text-navy-700 hover:border-navy-400 hover:bg-navy-50;
+}
+@utility btn-ghost-light {
+  @apply btn border border-white/25 text-white hover:bg-white/10;
+}
+@utility card {
+  @apply rounded-2xl border border-line bg-white;
+}
+@utility field-label {
+  @apply mb-1.5 block text-sm font-medium text-ink;
+}
+@utility field {
+  @apply block w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink placeholder:text-slate-400 transition-colors focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-100 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-100;
+}
+@utility field-error {
+  @apply mt-1.5 text-sm text-red-700;
+}
+/* Faint nautical-chart grid used on dark sections */
+@utility chart-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
