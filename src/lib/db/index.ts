@@ -13,7 +13,7 @@ const g = globalThis as unknown as { __auryxDb?: Promise<Db> };
  */
 export function getDb(): Promise<Db> {
   if (!g.__auryxDb) {
-    g.__auryxDb = createDb(process.env.DATABASE_URL).catch((err) => {
+    g.__auryxDb = createDb().catch((err) => {
       g.__auryxDb = undefined; // allow retry on next request
       throw err;
     });

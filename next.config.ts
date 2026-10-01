@@ -31,8 +31,8 @@ const nextConfig: NextConfig = {
   // PGlite ships WASM + data files that must not be bundled.
   serverExternalPackages: ["@electric-sql/pglite"],
   experimental: {
-    // Admin image uploads (max 5 MB each) go through Server Actions.
-    serverActions: { bodySizeLimit: "6mb" },
+    // Admin image uploads (max 4 MB each) go through Server Actions.
+    serverActions: { bodySizeLimit: "4.5mb" },
   },
   images: {
     localPatterns: [{ pathname: "/media/**" }, { pathname: "/brand/**" }],

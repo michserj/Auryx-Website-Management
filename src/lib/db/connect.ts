@@ -6,12 +6,21 @@ import * as schema from "./schema";
 
 export type Database = PostgresJsDatabase<typeof schema>;
 
+/** Connection string, also accepting the name Vercel's Postgres (Neon) integration sets. */
+export function databaseUrl() {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
+}
+
 export function isPglite(url: string | undefined) {
   return !url || url.startsWith("pglite:");
 }
 
-export async function createDb(url: string | undefined): Promise<Database> {
+export async function createDb(url: string | undefined = databaseUrl()): Promise<Database> {
   if (isPglite(url)) {
+    if (process.env.VERCEL) {
+      // Serverless functions have no persistent disk, so the embedded database can't be used there.
+      throw new Error("DATABASE_URL is not set. Connect a Postgres database (e.g. Neon) to the Vercel project.");
+    }
     const dir = url?.slice("pglite:".length) || "./.data/pglite";
     const { PGlite } = await import("@electric-sql/pglite");
     const { drizzle } = await import("drizzle-orm/pglite");
@@ -29,6 +38,8 @@ export async function createDb(url: string | undefined): Promise<Database> {
   const client = postgres(url!, {
     max: Number(process.env.DATABASE_POOL_MAX ?? 5),
     ssl: process.env.DATABASE_SSL === "disable" ? false : "prefer",
+    // Required for pooled (PgBouncer transaction-mode) connections such as Neon's pooler.
+    prepare: false,
   });
   return drizzlePg(client, { schema });
 }

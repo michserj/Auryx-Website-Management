@@ -87,7 +87,7 @@ export default async function EditCaseStudyPage(props: PageProps<"/admin/case-st
                     {c?.coverImageId ? "Replace image" : "Upload image"}
                   </label>
                   <input id="f-cover" name="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="field py-2" />
-                  <p className="mt-1 text-xs text-muted">JPEG, PNG, WebP or GIF · max 5 MB · landscape works best.</p>
+                  <p className="mt-1 text-xs text-muted">JPEG, PNG, WebP or GIF · max 4 MB · landscape works best.</p>
                 </div>
                 <Input label="Image description (alt text)" name="coverAlt" defaultValue={coverAlt} maxLength={300} />
               </div>

@@ -21,7 +21,7 @@ async function main() {
   const problem = passwordProblem(password);
   if (problem) throw new Error(problem);
 
-  const db = await createDb(process.env.DATABASE_URL);
+  const db = await createDb();
   const passwordHash = await bcrypt.hash(password, 12);
   const [existing] = await db.select().from(schema.adminUsers).where(eq(schema.adminUsers.email, email));
   if (existing) {

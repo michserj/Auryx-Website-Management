@@ -1,7 +1,8 @@
 import "server-only";
 import { getDb, schema } from "./db";
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// Vercel limits request bodies to 4.5 MB, so uploads are capped at 4 MB.
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 // SVG is intentionally not accepted (it can carry scripts).
 const SIGNATURES: { mime: string; test: (b: Buffer) => boolean }[] = [
@@ -16,7 +17,7 @@ export class ImageError extends Error {}
 /** Validates an uploaded file by size and magic bytes (not the client-sent type) and stores it. */
 export async function storeImage(file: File, alt: string) {
   if (file.size === 0) throw new ImageError("The file is empty.");
-  if (file.size > MAX_IMAGE_BYTES) throw new ImageError("Images must be 5 MB or smaller.");
+  if (file.size > MAX_IMAGE_BYTES) throw new ImageError("Images must be 4 MB or smaller.");
   const buf = Buffer.from(await file.arrayBuffer());
   const kind = SIGNATURES.find((s) => s.test(buf));
   if (!kind) throw new ImageError("Only JPEG, PNG, WebP or GIF images are allowed.");
