@@ -5,7 +5,9 @@ import { createInquiry } from "@/lib/inquiries";
 import { getContent } from "@/lib/settings";
 import { log } from "@/lib/logger";
 
-const MIN_FILL_MS = 3000;
+// Submissions faster than this are almost certainly bots. Measured in the
+// visitor's browser, so server/client clock differences don't matter.
+const MIN_FILL_MS = 1500;
 
 export async function POST(request: Request) {
   const site = await getContent("site");
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // Spam checks: silently accept (without storing) so bots get no signal.
-    const tooFast = typeof body.startedAt === "number" && Date.now() - body.startedAt < MIN_FILL_MS;
+    const tooFast = typeof body.elapsedMs === "number" && body.elapsedMs < MIN_FILL_MS;
     if (body.website || tooFast) {
       log.warn("contact.spam_blocked", { reason: body.website ? "honeypot" : "too_fast" });
       return NextResponse.json({ ok: true });

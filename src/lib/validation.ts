@@ -23,7 +23,7 @@ export const contactSchema = z.object({
   privacyAck: z.literal(true, { error: "Please acknowledge the Privacy Notice to continue." }),
   // Spam protection: hidden honeypot must stay empty; form must not be submitted instantly.
   website: z.string().max(0).optional(),
-  startedAt: z.number().optional(),
+  elapsedMs: z.number().optional(),
 });
 export type ContactInput = z.input<typeof contactSchema>;
 

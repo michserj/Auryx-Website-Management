@@ -22,7 +22,7 @@ export function ContactForm({ contactEmail }: { contactEmail: string }) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...values, privacyAck, startedAt: startedAt.current };
+    const payload = { ...values, privacyAck, elapsedMs: Date.now() - startedAt.current };
     const parsed = contactSchema.safeParse(payload);
     if (!parsed.success) {
       const errs = fieldErrors(parsed.error);
