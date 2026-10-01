@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Anchor, Mail, MapPin } from "lucide-react";
 import { getContent } from "@/lib/settings";
 import { CtaBand, Eyebrow, PageHero } from "@/components/Sections";
+import Image from "next/image";
 import { BulbMark } from "@/components/Logo";
+import { mediaUrl } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "About",
@@ -48,8 +50,20 @@ export default async function AboutPage() {
         <div className="container-page grid gap-10 py-20 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-4">
             <div className="relative mx-auto flex aspect-square max-w-xs items-center justify-center overflow-hidden rounded-3xl bg-navy-950">
-              <div className="chart-grid absolute inset-0" aria-hidden />
-              <BulbMark tone="light" className="relative h-24 w-24" />
+              {about.founderImageId ? (
+                <Image
+                  src={mediaUrl(about.founderImageId)}
+                  alt={about.founderImageAlt || `${about.founderName}, ${about.founderRole} of Auryx Software`}
+                  fill
+                  sizes="(min-width: 1024px) 320px, 80vw"
+                  className="object-cover"
+                />
+              ) : (
+                <>
+                  <div className="chart-grid absolute inset-0" aria-hidden />
+                  <BulbMark tone="light" className="relative h-24 w-24" />
+                </>
+              )}
             </div>
           </div>
           <div className="lg:col-span-8">

@@ -2,7 +2,10 @@ import { requireAdmin } from "@/lib/auth";
 import { getContent, getContentMeta } from "@/lib/settings";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { AdminPage, Checkbox, Input, NeedsReview, Panel, Textarea, fmtDate } from "@/components/admin/ui";
-import { saveAbout, saveHome, savePrivacy, saveSite } from "../../actions/content";
+import Image from "next/image";
+import { BulbMark } from "@/components/Logo";
+import { mediaUrl } from "@/lib/content";
+import { removeFounderPhoto, saveAbout, saveFounderPhoto, savePrivacy, saveHome, saveSite } from "../../actions/content";
 
 export const metadata = { title: "Pages & About" };
 
@@ -30,6 +33,7 @@ export default async function ContentPage() {
           ["#site", "General"],
           ["#home", "Home page"],
           ["#about", "About page"],
+          ["#founder-photo", "Founder photo"],
           ["#privacy", "Privacy notice"],
         ].map(([href, label]) => (
           <a key={href} href={href} className="rounded-lg bg-white px-3 py-1.5 font-medium text-navy-700 ring-1 ring-line hover:bg-navy-50">
@@ -102,6 +106,46 @@ export default async function ContentPage() {
             <Textarea label="Approach items" name="approach" defaultValue={toLines(about.approach)} rows={4} hint="One per line: Title | Description" />
             <Checkbox label="Needs Auryx review" name="needsReview" defaultChecked={aboutMeta.needsReview} />
           </ActionForm>
+        </Panel>
+
+        <Panel title="Founder photo" className="scroll-mt-6">
+          <span id="founder-photo" />
+          <div className="flex flex-col gap-6 sm:flex-row">
+            <div className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-navy-950">
+              {about.founderImageId ? (
+                <Image src={mediaUrl(about.founderImageId)} alt={about.founderImageAlt ?? ""} fill sizes="160px" className="object-cover" />
+              ) : (
+                <BulbMark tone="light" className="h-16 w-16" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1 space-y-4">
+              <p className="text-sm text-muted">
+                {about.founderImageId
+                  ? "This photo is shown on the About page."
+                  : "No photo uploaded yet, so the About page shows the Auryx bulb logo."}{" "}
+                Use a square or portrait photo (JPEG, PNG or WebP, max 4 MB).
+              </p>
+              <ActionForm action={saveFounderPhoto} submitLabel={about.founderImageId ? "Save" : "Upload photo"} resetOnSuccess>
+                <div>
+                  <label htmlFor="f-founderImage" className="field-label">
+                    {about.founderImageId ? "Replace photo (optional)" : "Photo"}
+                  </label>
+                  <input id="f-founderImage" name="founderImage" type="file" accept="image/jpeg,image/png,image/webp" className="field py-2" />
+                </div>
+                <Input
+                  label="Photo description (alt text)"
+                  name="founderImageAlt"
+                  defaultValue={about.founderImageAlt}
+                  placeholder={`${about.founderName}, ${about.founderRole} of Auryx Software`}
+                  maxLength={300}
+                  hint="Read aloud by screen readers. Leave empty to use the founder's name and role."
+                />
+              </ActionForm>
+              {about.founderImageId && (
+                <ActionForm action={removeFounderPhoto} submitLabel="Remove photo" variant="outline" confirm="Remove the founder photo? The bulb logo will be shown instead." />
+              )}
+            </div>
+          </div>
         </Panel>
 
         <Panel className="scroll-mt-6">

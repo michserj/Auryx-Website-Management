@@ -38,6 +38,9 @@ export type AboutContent = {
   founderBio: string;
   approachTitle: string;
   approach: { title: string; text: string }[];
+  /** Optional founder photo (uploaded in Admin). The bulb mark is shown when absent. */
+  founderImageId?: string;
+  founderImageAlt?: string;
 };
 
 export type PrivacyContent = {

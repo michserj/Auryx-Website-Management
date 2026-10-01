@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
-import { setContent } from "@/lib/settings";
+import { eq } from "drizzle-orm";
+import { getContent, setContent } from "@/lib/settings";
+import { getDb, schema } from "@/lib/db";
+import { fileFrom, ImageError, storeImage } from "@/lib/images";
 import { fieldErrors } from "@/lib/validation";
 import type { ActionResult } from "@/components/admin/ActionForm";
 
@@ -63,8 +66,70 @@ export async function saveAbout(_p: ActionResult, fd: FormData): Promise<ActionR
     })
     .safeParse({ ...Object.fromEntries(fd), approach: pairs(fd.get("approach")) });
   if (!parsed.success) return { ok: false, message: "Please fix the errors below.", errors: fieldErrors(parsed.error) };
-  await setContent("about", parsed.data, { needsReview: fd.get("needsReview") === "on" });
+  // Keep the founder photo, which is managed by its own form.
+  const current = await getContent("about");
+  await setContent(
+    "about",
+    { ...parsed.data, founderImageId: current.founderImageId, founderImageAlt: current.founderImageAlt },
+    { needsReview: fd.get("needsReview") === "on" },
+  );
   return done(admin.email, "about");
+}
+
+async function deleteImage(id: string | undefined) {
+  if (!id) return;
+  const db = await getDb();
+  await db.delete(schema.images).where(eq(schema.images.id, id));
+}
+
+/** Uploads or replaces the founder photo, and/or updates its description. */
+export async function saveFounderPhoto(_p: ActionResult, fd: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const about = await getContent("about");
+  const alt = String(fd.get("founderImageAlt") ?? "").trim().slice(0, 300) || `${about.founderName}, ${about.founderRole} of Auryx Software`;
+  const file = fileFrom(fd, "founderImage");
+  if (!file && !about.founderImageId) return { ok: false, message: "Choose a photo to upload." };
+
+  let founderImageId = about.founderImageId;
+  if (file) {
+    try {
+      founderImageId = await storeImage(file, alt);
+    } catch (err) {
+      return { ok: false, message: err instanceof ImageError ? err.message : "Could not upload the photo." };
+    }
+  } else if (founderImageId) {
+    const db = await getDb();
+    await db.update(schema.images).set({ alt }).where(eq(schema.images.id, founderImageId));
+  }
+
+  const meta = await getContentMetaSafe();
+  await setContent("about", { ...about, founderImageId, founderImageAlt: alt }, { needsReview: meta });
+  if (file && about.founderImageId) await deleteImage(about.founderImageId);
+  await audit(admin.email, file ? (about.founderImageId ? "founder_photo.replace" : "founder_photo.upload") : "founder_photo.update", "site_content", "about");
+  revalidatePath("/", "layout");
+  return { ok: true, message: file ? "Photo uploaded and published." : "Photo description saved." };
+}
+
+export async function removeFounderPhoto(): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const about = await getContent("about");
+  if (!about.founderImageId) return { ok: true, message: "No photo to remove." };
+  const meta = await getContentMetaSafe();
+  await setContent("about", { ...about, founderImageId: undefined, founderImageAlt: undefined }, { needsReview: meta });
+  await deleteImage(about.founderImageId);
+  await audit(admin.email, "founder_photo.remove", "site_content", "about");
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Photo removed. The bulb logo is shown instead." };
+}
+
+/** Preserves the About page's "needs review" flag when only the photo changes. */
+async function getContentMetaSafe() {
+  const db = await getDb();
+  const [row] = await db
+    .select({ needsReview: schema.siteContent.needsReview })
+    .from(schema.siteContent)
+    .where(eq(schema.siteContent.key, "about"));
+  return row?.needsReview ?? false;
 }
 
 export async function saveSite(_p: ActionResult, fd: FormData): Promise<ActionResult> {
