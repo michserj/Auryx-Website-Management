@@ -58,7 +58,7 @@ export default async function InquiryPage(props: PageProps<"/admin/inquiries/[id
               </div>
               <div>
                 <dt className="text-muted">Email notification</dt>
-                <dd>{inq.emailSentAt ? `Sent ${fmtDate(inq.emailSentAt)}` : inq.emailError ? <span className="text-orange-700">Failed, please follow up from here</span> : "Pending / not configured"}</dd>
+                <dd>{inq.emailSentAt ? `Sent ${fmtDate(inq.emailSentAt)}` : inq.emailError ? <span className="text-orange-700">Failed, please follow up from here. Reason: {inq.emailError}</span> : "Pending / not configured"}</dd>
               </div>
             </dl>
           </Panel>

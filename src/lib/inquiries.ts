@@ -2,7 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import { getContent } from "./settings";
-import { headerSafe, sendEmail } from "./email";
+import { explainEmailError, headerSafe, sendEmail } from "./email";
 import { log } from "./logger";
 import { siteUrl } from "./site-url";
 
@@ -56,7 +56,7 @@ export async function createInquiry(input: NewInquiry) {
     log.error("inquiry.email_failed", { inquiryId: row.id }, err);
     await db
       .update(schema.inquiries)
-      .set({ emailError: err instanceof Error ? err.message.slice(0, 500) : "unknown error" })
+      .set({ emailError: explainEmailError(err).slice(0, 500) })
       .where(eq(schema.inquiries.id, row.id));
   }
   return row.id;

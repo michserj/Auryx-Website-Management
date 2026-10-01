@@ -9,6 +9,8 @@ import { hashPassword, logout, requireAdmin, totpFor } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { getDb, schema } from "@/lib/db";
 import { runRetention } from "@/lib/retention";
+import { explainEmailError, isEmailConfigured, sendEmail } from "@/lib/email";
+import { rateLimit } from "@/lib/security";
 import { decrypt, encrypt } from "@/lib/security";
 import {
   bookingSettingsSchema,
@@ -154,4 +156,26 @@ export async function signOutEverywhere(): Promise<ActionResult> {
   await audit(admin.email, "security.sign_out_everywhere");
   await logout();
   redirect("/admin/login");
+}
+
+export async function sendTestEmail(_p: ActionResult, fd: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const to = String(fd.get("to") ?? "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return { ok: false, message: "Enter a valid email address." };
+  if (!isEmailConfigured()) {
+    return { ok: false, message: "Email sending is not switched on. Check the missing settings listed above, then redeploy." };
+  }
+  if (!(await rateLimit("test-email", 10, 3600))) return { ok: false, message: "Too many test emails. Try again later." };
+  try {
+    await sendEmail({
+      to,
+      subject: "Auryx website: test email",
+      text: "This is a test email from the Auryx website admin. If you can read this, email delivery is working.",
+    });
+  } catch (err) {
+    await audit(admin.email, "email.test_failed");
+    return { ok: false, message: explainEmailError(err) };
+  }
+  await audit(admin.email, "email.test_sent");
+  return { ok: true, message: `Sent to ${to}. Check the inbox (and Spam).` };
 }

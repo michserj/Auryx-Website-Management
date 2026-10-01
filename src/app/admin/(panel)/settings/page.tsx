@@ -5,6 +5,7 @@ import { getDb, schema } from "@/lib/db";
 import { decrypt } from "@/lib/security";
 import { getContent } from "@/lib/settings";
 import { isGoogleCalendarConfigured } from "@/lib/booking/calendar";
+import { emailSettingsStatus } from "@/lib/email";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { AdminPage, Checkbox, Input, Panel, Textarea } from "@/components/admin/ui";
 import { PASSWORD_RULE } from "@/lib/password-policy";
@@ -17,6 +18,7 @@ import {
   saveBookingSettings,
   saveChatbotSettings,
   saveRetentionSettings,
+  sendTestEmail,
   signOutEverywhere,
 } from "../../actions/settings";
 
@@ -34,6 +36,7 @@ export default async function SettingsPage() {
     getContent("chatbot"),
   ]);
 
+  const email = emailSettingsStatus();
   let qr: string | null = null;
   let manualKey: string | null = null;
   if (user.totpSecretEnc && !user.totpEnabled) {
@@ -78,6 +81,32 @@ export default async function SettingsPage() {
             </div>
             <Textarea label="Notification recipients" name="notifyEmails" defaultValue={booking.notifyEmails.join("\n")} rows={3} hint="One email per line. Also added as attendees on the calendar event." />
             <Checkbox label="Add a Google Meet link to consultation events" name="addVideoLink" defaultChecked={booking.addVideoLink} />
+          </ActionForm>
+        </Panel>
+
+        <Panel title="Email" className="xl:col-span-2">
+          <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-muted">Status</dt>
+              <dd className={email.missing.length ? "font-medium text-orange-700" : "font-medium text-green-700"}>
+                {email.missing.length ? `Not sending. Missing: ${email.missing.join(", ")}` : "Sending switched on"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">Sends with account (SMTP_USER)</dt>
+              <dd className="font-medium">{email.user ?? "Not set"}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Sender shown to recipients (EMAIL_FROM)</dt>
+              <dd className="font-medium">{email.from}</dd>
+            </div>
+          </dl>
+          <p className="mb-4 text-sm text-muted">
+            Email settings are environment variables in Vercel (never stored here). After changing them, redeploy, then send a test
+            email to confirm delivery. If it fails, the reason is shown below.
+          </p>
+          <ActionForm action={sendTestEmail} submitLabel="Send test email" variant="outline">
+            <Input label="Send a test email to" name="to" type="email" defaultValue={user.email} required />
           </ActionForm>
         </Panel>
 
