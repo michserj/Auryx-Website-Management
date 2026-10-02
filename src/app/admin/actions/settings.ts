@@ -167,11 +167,17 @@ export async function sendTestEmail(_p: ActionResult, fd: FormData): Promise<Act
   }
   if (!(await rateLimit("test-email", 10, 3600))) return { ok: false, message: "Too many test emails. Try again later." };
   try {
-    await sendEmail({
-      to,
-      subject: "Auryx website: test email",
-      text: "This is a test email from the Auryx website admin. If you can read this, email delivery is working.",
-    });
+    // Give up after 20 seconds so the admin always gets an answer.
+    await Promise.race([
+      sendEmail({
+        to,
+        subject: "Auryx website: test email",
+        text: "This is a test email from the Auryx website admin. If you can read this, email delivery is working.",
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(Object.assign(new Error("No response from the email server within 20 seconds."), { code: "ETIMEDOUT" })), 20_000),
+      ),
+    ]);
   } catch (err) {
     await audit(admin.email, "email.test_failed");
     return { ok: false, message: explainEmailError(err) };

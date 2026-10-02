@@ -39,7 +39,16 @@ export function ActionForm({
   className?: string;
   resetOnSuccess?: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
+  // Never leave the admin without feedback: a failed or timed-out request shows a message.
+  // Redirects thrown by server actions (NEXT_REDIRECT) are re-thrown so navigation still works.
+  const [state, formAction, pending] = useActionState(async (prev: ActionResult, fd: FormData) => {
+    try {
+      return await action(prev, fd);
+    } catch (err) {
+      if (typeof (err as { digest?: unknown })?.digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_")) throw err;
+      return { ok: false, message: "Something went wrong or the request timed out. Please try again." };
+    }
+  }, null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

@@ -23,6 +23,8 @@ import {
 } from "../../actions/settings";
 
 export const metadata = { title: "Settings" };
+// Allows time for the test email to reach the mail server.
+export const maxDuration = 60;
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

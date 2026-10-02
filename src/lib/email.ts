@@ -90,6 +90,9 @@ export async function sendEmail(email: Email) {
 export function explainEmailError(err: unknown) {
   const e = err as { code?: string; responseCode?: number; response?: string; message?: string };
   const raw = (e.response ?? e.message ?? String(err)).slice(0, 300);
+  if (e.responseCode === 550 && /relay|not allowed|invalid credentials for relay/i.test(raw)) {
+    return `Google's SMTP relay refused the message. In admin.google.com → Apps → Gmail → Routing → SMTP relay service, allow "Only addresses in my domains" with "Require SMTP Authentication", then wait 15 minutes. Details: ${raw}`;
+  }
   if (e.code === "EAUTH" || e.responseCode === 535 || e.responseCode === 534) {
     return `Google rejected the sign-in. Check that SMTP_USER is the mailbox the App Password was created for, and that SMTP_PASSWORD is that 16-character App Password (not the normal password). Details: ${raw}`;
   }
@@ -97,7 +100,7 @@ export function explainEmailError(err: unknown) {
     return `The sender address was refused. Set EMAIL_FROM to the SMTP_USER mailbox, or add it as a "Send mail as" address in Gmail. Details: ${raw}`;
   }
   if (e.code === "ETIMEDOUT" || e.code === "ECONNECTION" || e.code === "ESOCKET") {
-    return `Could not connect to the email server. Check SMTP_HOST (smtp.gmail.com) and SMTP_PORT (587). Details: ${raw}`;
+    return `Could not connect to the email server. Check SMTP_HOST (smtp.gmail.com or smtp-relay.gmail.com) and SMTP_PORT (587). If you just turned on the Workspace SMTP relay, wait 15 minutes and try again. Details: ${raw}`;
   }
   return raw;
 }
