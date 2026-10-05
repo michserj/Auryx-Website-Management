@@ -7,7 +7,14 @@ export type Email = {
   subject: string;
   text: string;
   replyTo?: string;
+  /** "public": seen by visitors (EMAIL_FROM). "team": internal notifications (NOTIFY_FROM). */
+  audience?: "public" | "team";
 };
+
+// Internal notifications must not come "from" the info@ group they are sent to:
+// Google Groups silently drops messages that appear to come from the group itself.
+const DEFAULT_PUBLIC_FROM = "Auryx Software <info@auryx.net>";
+const DEFAULT_TEAM_FROM = "Auryx Website <website@auryx.net>";
 
 /**
  * Provider-agnostic email sender.
@@ -62,11 +69,20 @@ export function emailSettingsStatus() {
     !c.user && "SMTP_USER",
     !c.pass && "SMTP_PASSWORD",
   ].filter(Boolean) as string[];
-  return { mode: transportMode(), missing, from: env("EMAIL_FROM") ?? "Auryx Software <info@auryx.net>", user: c.user };
+  return {
+    mode: transportMode(),
+    missing,
+    from: env("EMAIL_FROM") ?? DEFAULT_PUBLIC_FROM,
+    teamFrom: env("NOTIFY_FROM") ?? DEFAULT_TEAM_FROM,
+    user: c.user,
+  };
 }
 
 export async function sendEmail(email: Email) {
-  const from = env("EMAIL_FROM") ?? "Auryx Software <info@auryx.net>";
+  const from =
+    email.audience === "team"
+      ? (env("NOTIFY_FROM") ?? DEFAULT_TEAM_FROM)
+      : (env("EMAIL_FROM") ?? DEFAULT_PUBLIC_FROM);
   if (transportMode() !== "smtp") {
     log.info("email.console", {
       subject: email.subject,

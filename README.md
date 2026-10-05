@@ -158,6 +158,7 @@ Never commit `.env*` files with real values. `.gitignore` already excludes them.
 
 These emails are sent:
 - **Contact inquiry** → the address set in Admin → Pages → General (default `info@auryx.net`). Reply-To is set to the visitor.
+- **Senders:** emails visitors receive come from `EMAIL_FROM` (default `Auryx Software <info@auryx.net>`). Internal notifications come from `NOTIFY_FROM` (default `Auryx Website <website@auryx.net>`), because Google Groups silently drops messages that appear to come from the group they're sent to.
 - **Booking created / rescheduled / cancelled** → the visitor, plus the booking notification recipients (default `knut.bentzrod@auryx.net`, `mich.sergio@auryx.net`).
 
 **Google Workspace (recommended):**

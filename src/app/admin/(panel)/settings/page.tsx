@@ -87,7 +87,7 @@ export default async function SettingsPage() {
         </Panel>
 
         <Panel title="Email" className="xl:col-span-2">
-          <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-3">
+          <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-muted">Status</dt>
               <dd className={email.missing.length ? "font-medium text-orange-700" : "font-medium text-green-700"}>
@@ -99,8 +99,12 @@ export default async function SettingsPage() {
               <dd className="font-medium">{email.user ?? "Not set"}</dd>
             </div>
             <div>
-              <dt className="text-muted">Sender shown to recipients (EMAIL_FROM)</dt>
+              <dt className="text-muted">Sender shown to visitors (EMAIL_FROM)</dt>
               <dd className="font-medium">{email.from}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Sender of internal notifications (NOTIFY_FROM)</dt>
+              <dd className="font-medium">{email.teamFrom}</dd>
             </div>
           </dl>
           <p className="mb-4 text-sm text-muted">

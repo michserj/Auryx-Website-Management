@@ -34,6 +34,7 @@ export async function createInquiry(input: NewInquiry) {
 
   try {
     await sendEmail({
+      audience: "team",
       to: site.contactEmail,
       replyTo: input.email,
       subject: headerSafe(`New website inquiry from ${input.name}`),

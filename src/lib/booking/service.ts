@@ -305,6 +305,7 @@ async function notify(
   const results = await Promise.allSettled([
     sendEmail({ to: b.email, subject: `Your Auryx consultation is ${verb}`, text: visitorText, replyTo: "info@auryx.net" }),
     sendEmail({
+      audience: "team",
       to: s.notifyEmails,
       subject: headerSafe(`Consultation ${verb}: ${b.name}`),
       text: teamText,
