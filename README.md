@@ -1,4 +1,6 @@
-# Auryx Software — Website, Booking, AI Assistant & Admin
+# Auryx Website Management
+
+**Auryx Software website, consultation booking, AI assistant and admin dashboard**
 
 *The Silent Force Behind Smarter Software.*
 
@@ -6,23 +8,58 @@ The official Auryx Software website: a corporate site with lead generation (cont
 
 ---
 
+## Start here (for the Auryx team)
+
+### Live links
+| What | Link |
+|---|---|
+| Website | https://auryx-website-management.vercel.app |
+| Admin dashboard | https://auryx-website-management.vercel.app/admin |
+| Hosting (Vercel) | https://vercel.com/mich0509s-projects/auryx-website-management |
+| Code (this repo) | https://github.com/michserj/Auryx-Website-Management |
+
+**Admin access:** ask Mich for the admin login. It is never stored in this repository. If you're locked out, see [Admin & authentication](#admin--authentication).
+
+### Current status
+| Feature | Status |
+|---|---|
+| Public website (Home, About, Services, Case Studies, Contact, Privacy) | ✅ Live |
+| Contact form → saved in Admin + email to info@auryx.net | ✅ Working |
+| Consultation booking → saved in Admin + emails to Knut and Mich + visitor confirmation | ✅ Working |
+| Admin dashboard (content, services, case studies, inquiries, bookings, chatbot, settings) | ✅ Working |
+| Database (Neon Postgres via Vercel) | ✅ Connected |
+| Email (Google Workspace SMTP relay) | ✅ Connected |
+| Chat assistant | ⚠️ FAQ mode. Add an AI key for full AI answers ([AI provider setup](#ai-provider-setup)) |
+| Google Calendar events for bookings | ⏳ Not connected yet ([Google Calendar setup](#google-calendar-setup)) |
+| Custom domain auryx.net | ⏳ Not connected yet (Vercel → Settings → Domains) |
+| Final content approval (privacy notice, services, case study) | ⏳ Flagged "Needs Auryx review" in Admin |
+
+### How changes go live
+- Every push to the **`main`** branch deploys automatically to the live site within about 1 minute.
+- For bigger changes, work on a separate branch and open a pull request. Vercel builds a **preview link** for each branch so you can check it before merging into `main`.
+- Website **content** (texts, services, case studies, FAQ answers, photos) is edited in the **Admin dashboard**, not in code.
+- **Secrets** (passwords, API keys) live only in Vercel → Settings → Environment Variables. Never commit them.
+
+---
+
 ## Contents
 
-1. [Overview](#overview)
-2. [Architecture & tech stack](#architecture--tech-stack)
-3. [Local setup](#local-setup)
-4. [Environment variables](#environment-variables)
-5. [Database](#database)
-6. [Admin & authentication](#admin--authentication)
-7. [Email setup](#email-setup)
-8. [Google Calendar setup](#google-calendar-setup)
-9. [AI provider setup](#ai-provider-setup)
-10. [Data retention](#data-retention)
-11. [Deployment](#deployment)
-12. [Testing](#testing)
-13. [Troubleshooting](#troubleshooting)
-14. [Decisions, assumptions & items for Auryx review](#decisions-assumptions--items-for-auryx-review)
-15. [Known limitations](#known-limitations)
+1. [Start here (for the Auryx team)](#start-here-for-the-auryx-team)
+2. [Overview](#overview)
+3. [Architecture & tech stack](#architecture--tech-stack)
+4. [Local setup](#local-setup)
+5. [Environment variables](#environment-variables)
+6. [Database](#database)
+7. [Admin & authentication](#admin--authentication)
+8. [Email setup](#email-setup)
+9. [Google Calendar setup](#google-calendar-setup)
+10. [AI provider setup](#ai-provider-setup)
+11. [Data retention](#data-retention)
+12. [Deployment](#deployment)
+13. [Testing](#testing)
+14. [Troubleshooting](#troubleshooting)
+15. [Decisions, assumptions & items for Auryx review](#decisions-assumptions--items-for-auryx-review)
+16. [Known limitations](#known-limitations)
 
 ---
 
@@ -108,14 +145,15 @@ All variables are documented in [`.env.example`](.env.example). Secrets are read
 
 | Variable | Required in prod | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | ✅ | Public base URL used for email links, the sitemap and OG tags. **Set it at build time**, because Next.js inlines it. |
-| `DATABASE_URL` | ✅ | PostgreSQL connection string. Leave unset locally to use PGlite. |
+| `NEXT_PUBLIC_SITE_URL` | optional on Vercel | Public base URL used for email links, the sitemap and OG tags. **Set it at build time**, because Next.js inlines it. |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string (set automatically by the Neon integration on Vercel). Leave unset locally to use PGlite. |
 | `DATABASE_SSL`, `DATABASE_POOL_MAX` | – | TLS toggle and pool size |
 | `AUTH_SECRET` | ✅ | ≥32 random chars. Signs admin sessions and encrypts MFA secrets. The app refuses to run in production without it. |
-| `EMAIL_TRANSPORT`, `EMAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | ✅ | Outgoing email |
+| `EMAIL_TRANSPORT`, `EMAIL_FROM`, `NOTIFY_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | ✅ | Outgoing email (see [Email setup](#email-setup)) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, `GOOGLE_CALENDAR_ID` | ✅ | Consultation calendar |
 | `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`, `AI_BASE_URL` | optional | Chat assistant model. Without a key, the FAQ-only mode is used. |
 | `CRON_SECRET` | ✅ | Protects the daily retention job |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | first deploy only | Create the first admin during the build if none exists. Delete `ADMIN_PASSWORD` after the first login. |
 
 Never commit `.env*` files with real values. `.gitignore` already excludes them.
 
