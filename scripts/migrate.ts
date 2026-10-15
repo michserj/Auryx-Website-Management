@@ -1,13 +1,11 @@
 import "dotenv/config";
 import path from "node:path";
-import { databaseUrl, isPglite } from "../src/lib/db/connect";
+import { assertPersistentDatabase, databaseUrl, isPglite } from "../src/lib/db/connect";
 
 // Applies SQL migrations from ./drizzle to the configured database.
 async function main() {
   const url = databaseUrl();
-  if (process.env.VERCEL && isPglite(url)) {
-    throw new Error("DATABASE_URL is not set. Connect a Postgres database (e.g. Neon) to this Vercel project first.");
-  }
+  assertPersistentDatabase(url);
   const migrationsFolder = path.resolve("drizzle");
   if (isPglite(url)) {
     const { createDb } = await import("../src/lib/db/connect");

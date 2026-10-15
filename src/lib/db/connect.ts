@@ -15,12 +15,28 @@ export function isPglite(url: string | undefined) {
   return !url || url.startsWith("pglite:");
 }
 
+/**
+ * The embedded PGlite database is for local development only. On servers,
+ * containers and serverless platforms its files can disappear on restart, so a
+ * hosted deployment must use PostgreSQL. Fail loudly instead of losing data.
+ * (Set DATABASE_URL=pglite:<dir> explicitly to opt in, e.g. for a local production test.)
+ */
+export function assertPersistentDatabase(url: string | undefined) {
+  const hosted = !!(process.env.VERCEL || process.env.NODE_ENV === "production");
+  if (!url && hosted) {
+    throw new Error(
+      "DATABASE_URL is not set. Production deployments need a PostgreSQL database (e.g. Amazon RDS or Neon). " +
+        "Set DATABASE_URL to its connection string.",
+    );
+  }
+  if (url?.startsWith("pglite:") && process.env.VERCEL) {
+    throw new Error("The embedded database cannot be used on Vercel. Connect a Postgres database (e.g. Neon).");
+  }
+}
+
 export async function createDb(url: string | undefined = databaseUrl()): Promise<Database> {
+  assertPersistentDatabase(url);
   if (isPglite(url)) {
-    if (process.env.VERCEL) {
-      // Serverless functions have no persistent disk, so the embedded database can't be used there.
-      throw new Error("DATABASE_URL is not set. Connect a Postgres database (e.g. Neon) to the Vercel project.");
-    }
     const dir = url?.slice("pglite:".length) || "./.data/pglite";
     const { PGlite } = await import("@electric-sql/pglite");
     const { drizzle } = await import("drizzle-orm/pglite");

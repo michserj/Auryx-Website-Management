@@ -34,6 +34,9 @@ The official Auryx Software website: a corporate site with lead generation (cont
 | Custom domain auryx.net | ⏳ Not connected yet (Vercel → Settings → Domains) |
 | Final content approval (privacy notice, services, case study) | ⏳ Flagged "Needs Auryx review" in Admin |
 
+### Deploying to your own servers
+The code is not tied to Vercel. To host it on **AWS**, follow [Deployment → Option C](#option-c--aws-ecs-fargate-or-app-runner--rds). A `Dockerfile` and a `/api/health` check are included.
+
 ### How changes go live
 - Every push to the **`main`** branch deploys automatically to the live site within about 1 minute.
 - For bigger changes, work on a separate branch and open a pull request. Vercel builds a **preview link** for each branch so you can check it before merging into `main`.
@@ -309,7 +312,49 @@ These periods are business targets from the BA. They are **not** a legal determi
    ```
 3. Run `npm start` (port 3000) under systemd or pm2, and add the retention cron entry shown above.
 
-> Don't use PGlite in production. Use PostgreSQL.
+> Don't use PGlite in production. Use PostgreSQL. In production the app refuses to use the embedded database: if `DATABASE_URL` is missing, `/api/health` returns 503 and database features stop working.
+
+### Option C — AWS (ECS Fargate or App Runner + RDS)
+
+The repo includes a **`Dockerfile`** and a health check at **`/api/health`** (200 when the app and database respond, 503 otherwise).
+
+**1. Database: Amazon RDS for PostgreSQL**
+- Create a PostgreSQL 16+ instance in the same VPC as the app. Allow inbound 5432 only from the app's security group.
+- `DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DBNAME` (TLS is used when available; set `DATABASE_SSL=disable` only for a database without TLS).
+
+**2. Build the image and push it to ECR**
+```bash
+docker build --build-arg NEXT_PUBLIC_SITE_URL=https://auryx.net -t auryx-website .
+```
+`NEXT_PUBLIC_SITE_URL` must be passed at **build** time (it's baked into links, the sitemap and SEO tags). Push the image to an ECR repository as usual.
+
+**3. Secrets and settings**
+Store the variables from [`.env.example`](.env.example) in **AWS Secrets Manager / SSM Parameter Store** and inject them into the task or service. Required: `DATABASE_URL`, `AUTH_SECRET`, `CRON_SECRET`, the email settings (`EMAIL_TRANSPORT`, `SMTP_*`, `EMAIL_FROM`), and for the first deployment `ADMIN_EMAIL` + `ADMIN_PASSWORD`. Calendar and AI settings are optional.
+
+**4. Create the database tables and content (once, and after each update that adds migrations)**
+Run the same image as a one-off ECS task (or App Runner job) with these commands:
+```bash
+npm run db:migrate
+```
+```bash
+npm run db:seed
+```
+`db:seed` only adds content that doesn't exist yet, and creates the first admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` if no admin exists. Remove `ADMIN_PASSWORD` afterwards. To reset a password later, run `npm run admin:create` the same way (with `ADMIN_EMAIL` and `ADMIN_PASSWORD` set for that run only).
+
+**5. Run the service**
+- Container port **3000**, health check path **`/api/health`**.
+- Put it behind an **Application Load Balancer** (or App Runner's built-in HTTPS) with an ACM certificate for `auryx.net`. The load balancer must pass `X-Forwarded-For` (ALB does by default), which rate limiting uses.
+- 0.5 vCPU / 1 GB memory is enough to start. More than one task is fine, since sessions, rate limits and uploads all live in the database.
+
+**6. Daily data clean-up (replaces Vercel Cron)**
+Create an **Amazon EventBridge Scheduler** rule (daily, e.g. 02:00 Asia/Manila) that calls `GET https://auryx.net/api/cron/retention` with the header `Authorization: Bearer <CRON_SECRET>`, using an EventBridge *API destination* whose connection uses API-key auth (`Authorization` / `Bearer <CRON_SECRET>`). `vercel.json` is ignored outside Vercel.
+
+**7. DNS and switch-over**
+Point `auryx.net` (Route 53 or your DNS provider) at the load balancer. If the Vercel deployment is retired, copy any data you want to keep from Neon to RDS first (`pg_dump` from Neon → `pg_restore` into RDS), then delete the Vercel project so there's only one live copy.
+
+Other notes:
+- Image uploads are stored in the database, so no S3 bucket is needed. Uploads are capped at 4 MB.
+- Emails work the same as on Vercel (Google Workspace SMTP relay, see [Email setup](#email-setup)).
 
 ## Testing
 
