@@ -161,11 +161,16 @@ These emails are sent:
 - **Senders:** emails visitors receive come from `EMAIL_FROM` (default `Auryx Software <info@auryx.net>`). Internal notifications come from `NOTIFY_FROM` (default `Auryx Website <website@auryx.net>`), because Google Groups silently drops messages that appear to come from the group they're sent to.
 - **Booking created / rescheduled / cancelled** → the visitor, plus the booking notification recipients (default `knut.bentzrod@auryx.net`, `mich.sergio@auryx.net`).
 
-**Google Workspace (recommended):**
-1. Pick a sending account (e.g. `info@auryx.net`). Enable 2-Step Verification and create an **App Password**.
-2. Set `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER=info@auryx.net`, `SMTP_PASSWORD=<app password>`, `EMAIL_FROM="Auryx Software <info@auryx.net>"`.
-3. Alternatively, use Workspace **SMTP relay** (`smtp-relay.gmail.com`) with IP allow-listing, or any transactional SMTP provider.
-4. Add SPF/DKIM/DMARC for `auryx.net` so messages aren't marked as spam.
+**Google Workspace SMTP relay (recommended, the setup used in production):**
+1. In **admin.google.com → Apps → Google Workspace → Gmail → Routing → SMTP relay service**, add a rule: *Allowed senders: Only addresses in my domains*, ✅ *Require SMTP Authentication*, ✅ *Require TLS encryption*.
+2. Create an **App Password** for a real Workspace user (e.g. `mich.sergio@auryx.net`) at https://myaccount.google.com/apppasswords. 2-Step Verification must be on.
+3. Set `SMTP_HOST=smtp-relay.gmail.com`, `SMTP_PORT=587`, `SMTP_USER=<that user>`, `SMTP_PASSWORD=<app password>`, `EMAIL_FROM="Auryx Software <info@auryx.net>"`. `NOTIFY_FROM` defaults to `Auryx Website <website@auryx.net>`.
+4. Redeploy, then use **Admin → Settings → Email → Send test email**.
+
+Notes:
+- With plain `smtp.gmail.com`, Google replaces the From address with the signing-in user's own address. The relay keeps `info@` / `website@`.
+- If `info@auryx.net` is a Google Group, its **Who can post** setting must allow the website's emails (e.g. *Anyone on the web*), and Workspace must allow groups to receive outside email (Admin → Groups for Business → Sharing settings).
+- Add SPF/DKIM/DMARC for `auryx.net` so messages aren't marked as spam.
 
 If sending fails, the inquiry is **still saved**. The dashboard marks it "⚠ email" so nothing is lost.
 
